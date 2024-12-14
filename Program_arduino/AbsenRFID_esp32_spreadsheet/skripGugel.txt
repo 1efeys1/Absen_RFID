@@ -1,0 +1,105 @@
+function doGet(e) {
+  Logger.log("--- doGet ---");
+
+  var tag = "";
+
+  try {
+    // Ambil parameter dari URL
+    if (e.parameter.tag) {
+      tag = e.parameter.tag;
+    } else {
+      throw new Error("Parameter 'tag' is missing.");
+    }
+
+    // Simpan data ke spreadsheet
+    saveData(tag);
+
+    return ContentService.createTextOutput("Success: Data saved\nTag: " + tag);
+
+  } catch (error) {
+    Logger.log("Error: " + error.message);
+    return ContentService.createTextOutput("Error: " + error.message);
+  }
+}
+
+// Fungsi untuk menyimpan data ke spreadsheet
+function saveData(tag) {
+  Logger.log("--- saveData ---");
+
+  try {
+    // Ganti URL ini dengan URL spreadsheet Anda
+    var sheet = SpreadsheetApp.openByUrl("https://docs.google.com/spreadsheets/d/1qW2l_-26KkfheUEeaGp2Kqv0DG_JOkNPBI8wL-GPXLI/edit?usp=sharing");
+    var sheet1Name = "Absensi"; // Nama sheet tempat menyimpan data
+    var sheet2Name = "Database Nama"; // Nama sheet yang berisi UID dan User
+    var dataLoggerSheet = sheet.getSheetByName(sheet1Name);
+    var uidSheet = sheet.getSheetByName(sheet2Name);
+
+    // Jika sheet tidak ada, buat sheet baru dan tambahkan header
+    if (!dataLoggerSheet) {
+      dataLoggerSheet = sheet.insertSheet(sheet1Name);
+      dataLoggerSheet.appendRow(["ID", "Timestamp", "Tag (UID)", "User"]);
+    }
+
+    // Ambil data UID dan User dari Sheet2
+    var uidData = uidSheet.getDataRange().getValues(); // Asumsikan UID di kolom A dan User di kolom B
+    var uidMap = {};
+    for (var i = 1; i < uidData.length; i++) {
+      uidMap[uidData[i][0]] = uidData[i][1];
+    }
+
+    // Cari User berdasarkan UID
+    var user = uidMap[tag] || "Unknown User";
+
+    // Tambahkan data baru di baris terakhir
+    var row = dataLoggerSheet.getLastRow() + 1;
+    var timestamp = new Date();
+
+    dataLoggerSheet.getRange("A" + row).setValue(row - 1); // ID
+    dataLoggerSheet.getRange("B" + row).setValue(timestamp); // Timestamp
+    dataLoggerSheet.getRange("C" + row).setValue(tag); // Tag (UID)
+    dataLoggerSheet.getRange("D" + row).setValue(user); // User
+
+    Logger.log("Data saved successfully.");
+
+  } catch (error) {
+    Logger.log("Error in saveData: " + JSON.stringify(error));
+    throw new Error("Failed to save data: " + error.message);
+  }
+}
+
+// Fungsi untuk memperbarui kolom User di Sheet1
+function updateUserColumn() {
+  Logger.log("--- updateUserColumn ---");
+
+  try {
+    // Buka Spreadsheet
+    var sheet = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet1 = sheet.getSheetByName("Absensi");
+    var sheet2 = sheet.getSheetByName("Database Nama");
+
+    // Ambil data
+    var data1 = sheet1.getRange(2, 3, sheet1.getLastRow() - 1, 1).getValues(); // UID di Sheet1
+    var data2 = sheet2.getRange(2, 1, sheet2.getLastRow() - 1, 2).getValues(); // UID dan User di Sheet2
+
+    // Buat objek pencarian UID-User
+    var uidMap = {};
+    data2.forEach(function(row) {
+      uidMap[row[0]] = row[1]; // row[0]: UID, row[1]: User
+    });
+
+    // Update kolom User di Sheet1
+    var userColumn = [];
+    data1.forEach(function(row) {
+      var user = uidMap[row[0]] || "Unknown User"; // Cari User berdasarkan UID
+      userColumn.push([user]);
+    });
+
+    sheet1.getRange(2, 4, userColumn.length, 1).setValues(userColumn); // Isi kolom User di Sheet1
+
+    Logger.log("User column updated successfully.");
+
+  } catch (error) {
+    Logger.log("Error in updateUserColumn: " + JSON.stringify(error));
+    throw new Error("Failed to update User column: " + error.message);
+  }
+}
