@@ -12,10 +12,9 @@ function doGet(e) {
     }
 
     // Simpan data ke spreadsheet
-    saveData(tag);
+    var name = saveData(tag);
 
-    return ContentService.createTextOutput("Success: Data saved\nTag: " + tag);
-
+    return ContentService.createTextOutput(name);
   } catch (error) {
     Logger.log("Error: " + error.message);
     return ContentService.createTextOutput("Error: " + error.message);
@@ -61,6 +60,7 @@ function saveData(tag) {
 
     Logger.log("Data saved successfully.");
 
+    return user;
   } catch (error) {
     Logger.log("Error in saveData: " + JSON.stringify(error));
     throw new Error("Failed to save data: " + error.message);

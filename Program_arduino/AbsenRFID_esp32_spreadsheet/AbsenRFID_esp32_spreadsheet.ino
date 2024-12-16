@@ -25,7 +25,7 @@ const char* ssid = "efeys";            // Ganti dengan SSID WiFi Anda
 const char* password = "arpan004";    // Ganti dengan password WiFi Anda
 
 // ID Google Apps Script
-String GOOGLE_SCRIPT_ID = "AKfycbz9yFlsjDf9z2T-wVcbpLdV40rqPkaaX8Kz39bJ3sJmLtxvLk_Y4E9jyhtD3noXgoe35w"; // Ganti dengan ID Google Apps Script
+String GOOGLE_SCRIPT_ID = "AKfycbwrakQ-A-Hff8A9LrdQJkoj_j26nzxRQltrQX2g8BCzq-cPIw8LzwiYTDZU-jSqcux0XA"; // Ganti dengan ID Google Apps Script
 
 // Pin untuk buzzer
 #define BUZZER_PIN 25
@@ -92,6 +92,12 @@ void loop() {
     return;
   }
 
+  konten.clearDisplay();
+  konten.setCursor(10, 20);
+  konten.setTextSize(1);
+  konten.print("Please wait...");
+  konten.display();
+
   // Mengonversi UID menjadi format hex string
   String uidHex = "";
   for (byte i = 0; i < mfrc522.uid.size; i++) {
@@ -103,6 +109,14 @@ void loop() {
   }
   uidHex.toUpperCase();
 
+  // Aktifkan buzzer
+  // digitalWrite(BUZZER_PIN, HIGH); // Nyalakan buzzer
+  // delay(300);                     // Tunggu 300ms
+  // digitalWrite(BUZZER_PIN, LOW);  // Matikan buzzer
+
+  // Kirim data ke Google Sheets
+  String result = sendDataToGoogleSheets(uidHex);
+
   // Tampilkan UID di OLED
   konten.clearDisplay();
   konten.setCursor(0, 10);
@@ -110,15 +124,13 @@ void loop() {
   konten.print("UID:");
   konten.setCursor(0, 20);
   konten.print(uidHex);
+  konten.setCursor(0, 35);
+  konten.print("User:");
+  konten.setCursor(0, 45);
+  konten.print(result);
   konten.display();
 
-  // Aktifkan buzzer
-  digitalWrite(BUZZER_PIN, HIGH); // Nyalakan buzzer
-  delay(300);                     // Tunggu 300ms
-  digitalWrite(BUZZER_PIN, LOW);  // Matikan buzzer
-
-  // Kirim data ke Google Sheets
-  sendDataToGoogleSheets(uidHex);
+  Serial.println("User detected: " + result);
 
   // Set waktu terakhir UID ditampilkan
   lastUIDDisplayTime = millis();
@@ -142,9 +154,11 @@ String urlEncode(const String &str) {
   return encoded;
 }
 
-void sendDataToGoogleSheets(const String& uid) {
+String sendDataToGoogleSheets(const String& uid) {
   if (WiFi.status() == WL_CONNECTED) {
     HTTPClient http;
+
+    http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
     
     // Format URL dengan parameter
     String url = "https://script.google.com/macros/s/" + GOOGLE_SCRIPT_ID + "/exec?tag=" + urlEncode(uid);
@@ -157,9 +171,13 @@ void sendDataToGoogleSheets(const String& uid) {
       String response = http.getString();  // Respons dari server
       Serial.println("HTTP Response Code: " + String(httpResponseCode));
       Serial.println("Response: " + response);
+
+      return response;
     } else {
       Serial.println("Error in HTTP request");
       Serial.println("HTTP Response Code: " + String(httpResponseCode));
+
+      return (String) "Error";
     }
     
     http.end();  // Mengakhiri koneksi HTTP
