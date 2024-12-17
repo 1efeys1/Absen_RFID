@@ -21,21 +21,17 @@ MFRC522DriverSPI driver{ss_pin};
 MFRC522 mfrc522{driver};
 
 // Konfigurasi WiFi
-const char* ssid = "efeys";            // Ganti dengan SSID WiFi Anda
-const char* password = "arpan004";    // Ganti dengan password WiFi Anda
+const char* ssid = "efeys";            // SSID Hotspot
+const char* password = "arpan004";    // password Hotspot
 
 // ID Google Apps Script
-String GOOGLE_SCRIPT_ID = "AKfycbwrakQ-A-Hff8A9LrdQJkoj_j26nzxRQltrQX2g8BCzq-cPIw8LzwiYTDZU-jSqcux0XA"; // Ganti dengan ID Google Apps Script
-
-// Pin untuk buzzer
-#define BUZZER_PIN 25
+String GOOGLE_SCRIPT_ID = "AKfycbwrakQ-A-Hff8A9LrdQJkoj_j26nzxRQltrQX2g8BCzq-cPIw8LzwiYTDZU-jSqcux0XA"; // ID Google Apps Script
 
 // Variabel untuk mengatur waktu tampilan
 unsigned long lastUIDDisplayTime = 0;
 bool showingUID = false;
 
 void setup() {
-  pinMode(BUZZER_PIN, OUTPUT);
 
   // Inisialisasi OLED
   konten.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS);
@@ -108,11 +104,6 @@ void loop() {
     if (i < mfrc522.uid.size - 1) uidHex += " ";
   }
   uidHex.toUpperCase();
-
-  // Aktifkan buzzer
-  // digitalWrite(BUZZER_PIN, HIGH); // Nyalakan buzzer
-  // delay(300);                     // Tunggu 300ms
-  // digitalWrite(BUZZER_PIN, LOW);  // Matikan buzzer
 
   // Kirim data ke Google Sheets
   String result = sendDataToGoogleSheets(uidHex);
